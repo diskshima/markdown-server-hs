@@ -25,11 +25,14 @@ executable markdown-server-hs-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bytestring
+                     , cmark
                      , directory
                      , markdown-server-hs
                      , snap
                      , snap-core
                      , snap-server
+                     , string-conversions
+                     , text
   default-language:    Haskell2010
 
 test-suite markdown-server-hs-test
