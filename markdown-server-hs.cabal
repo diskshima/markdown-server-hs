@@ -27,6 +27,7 @@ executable markdown-server-hs-exe
                      , bytestring
                      , cmark
                      , directory
+                     , filepath
                      , markdown-server-hs
                      , snap
                      , snap-core

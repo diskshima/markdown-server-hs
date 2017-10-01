@@ -13,14 +13,19 @@ import           Lib
 import           Snap                    (Snap, getParam, ifTop, quickHttpServe,
                                           redirect, route, writeBS)
 import           System.Directory        (listDirectory)
+import           System.Environment      (getArgs)
+import           System.FilePath         (joinPath)
 
 main :: IO ()
-main = quickHttpServe site
+main = do
+  args <- getArgs
+  let docdir = L.head args
+  quickHttpServe (site docdir)
 
-site :: Snap ()
-site =
+site :: FilePath -> Snap ()
+site docdir =
   ifTop (handleTop "/") <|>
-  route [("/:path", pathHandler)]
+  route [("/:path", pathHandler docdir)]
 
 handleTop :: ByteString -> Snap ()
 handleTop path = do
@@ -33,14 +38,17 @@ joinPaths path = joinWithComma <$> listDirectory (B8.unpack path)
 joinWithComma :: [String] -> String
 joinWithComma = L.intercalate ","
 
-pathHandler :: Snap ()
-pathHandler = do
+pathHandler :: FilePath -> Snap ()
+pathHandler docdir = do
   param <- getParam "path"
   case param of
     Nothing -> writeBS "N/A"
     Just x -> do
-      content <- (liftIO . toHtmlBS) x
+      content <- (liftIO . toHtmlBS) (convertString $ getFilePath docdir (B8.unpack x))
       writeBS content
+
+getFilePath :: FilePath -> FilePath -> FilePath
+getFilePath a b = joinPath [a, b]
 
 toHtmlBS :: ByteString -> IO ByteString
 toHtmlBS path = do
