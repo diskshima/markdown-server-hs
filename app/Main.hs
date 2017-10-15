@@ -5,7 +5,7 @@ import           CMark                   as C
 import           Control.Applicative     ((<|>))
 import           Control.Monad.IO.Class  (liftIO)
 import           Data.ByteString         as BS
-import qualified Data.ByteString.Char8   as B8
+import qualified Data.ByteString.UTF8    as BU8
 import           Data.List               as L
 import           Data.String.Conversions (convertString)
 import           Data.Text               as T
@@ -32,7 +32,7 @@ handleTop :: FilePath -> Snap ()
 handleTop = buildContent
 
 joinPaths :: ByteString -> IO String
-joinPaths path = joinWithComma <$> listDirectory (B8.unpack path)
+joinPaths path = joinWithComma <$> listDirectory (BU8.toString path)
 
 joinWithComma :: [String] -> String
 joinWithComma = L.intercalate ","
@@ -42,7 +42,7 @@ pathHandler docdir = do
   param <- getParam "path"
   case param of
     Nothing -> writeBS "N/A"
-    Just x -> buildContent $ getFilePath docdir (B8.unpack x)
+    Just x -> buildContent $ getFilePath docdir (BU8.toString x)
 
 buildContent :: FilePath -> Snap ()
 buildContent filepath = do

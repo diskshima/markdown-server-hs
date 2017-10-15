@@ -34,6 +34,7 @@ executable markdown-server-hs-exe
                      , snap-server
                      , string-conversions
                      , text
+                     , utf8-string
   default-language:    Haskell2010
 
 test-suite markdown-server-hs-test
