@@ -12,7 +12,8 @@ import           Data.Text               as T
 import           Lib
 import           Snap                    (Snap, getParam, ifTop, quickHttpServe,
                                           redirect, route, writeBS)
-import           System.Directory        (listDirectory)
+import           System.Directory        (doesDirectoryExist, doesFileExist,
+                                          listDirectory)
 import           System.Environment      (getArgs)
 import           System.FilePath         (joinPath)
 
@@ -44,15 +45,32 @@ pathHandler docdir = do
   case param of
     Nothing -> writeBS "N/A"
     Just x -> do
-      content <- (liftIO . toHtmlBS) (convertString $ getFilePath docdir (B8.unpack x))
+      content <- buildContent filepath
       writeBS content
+      where
+        filepath = getFilePath docdir (B8.unpack x)
+
+buildContent :: FilePath -> Snap ByteString
+buildContent filepath = do
+  isDir <- liftIO . doesDirectoryExist $ filepath
+  liftIO $ if isDir
+             then buildDirContent filepath
+             else buildFileContent filepath
+
+buildFileContent :: FilePath -> IO ByteString
+buildFileContent = toHtmlBS . convertString
+
+buildDirContent :: FilePath -> IO ByteString
+buildDirContent filepath = do
+  content <- joinPaths $ convertString filepath
+  return $ convertString content
 
 getFilePath :: FilePath -> FilePath -> FilePath
 getFilePath a b = joinPath [a, b]
 
 toHtmlBS :: ByteString -> IO ByteString
 toHtmlBS path = do
-  content <- toHtml . convertString $ path
+  content <- toHtml $ convertString path
   return $ convertString content
 
 toHtml :: FilePath -> IO Text
