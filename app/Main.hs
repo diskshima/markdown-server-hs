@@ -9,6 +9,7 @@ import           Control.Lens.Operators   ((.~))
 import           Control.Monad.IO.Class   (liftIO)
 import           Data.Binary.Builder      (Builder)
 import           Data.ByteString          as BS
+import           Data.ByteString.Char8    as BC8
 import qualified Data.ByteString.UTF8     as BU8
 import           Data.List                as L
 import           Data.String.Conversions  (convertString)
@@ -24,7 +25,7 @@ import           Heist.Interpreted        (Splice, bindSplice, renderTemplate,
 import           Lib
 import           Snap                     (Snap, getParam, ifTop,
                                            quickHttpServe, redirect, route,
-                                           writeBS)
+                                           writeBS, getRequest, rqURI)
 import           System.Directory         (doesDirectoryExist, doesFileExist,
                                            listDirectory)
 import           System.Environment       (getArgs)
@@ -38,9 +39,7 @@ main = do
   quickHttpServe (site docdir)
 
 site :: FilePath -> Snap ()
-site docdir =
-  ifTop (handleTop docdir) <|>
-  route [("/:path", pathHandler docdir)]
+site = pathHandler
 
 renderSimple :: Splice IO -> IO (Maybe (Builder, MIMEType))
 renderSimple mainSplice = do
@@ -72,10 +71,15 @@ joinWithComma = L.intercalate ","
 
 pathHandler :: FilePath -> Snap ()
 pathHandler docdir = do
-  param <- getParam "path"
-  case param of
-    Nothing -> writeBS "N/A"
-    Just x -> buildContent $ getFilePath docdir (BU8.toString x)
+  filepath <- buildPath docdir
+  buildContent filepath
+
+buildPath :: FilePath -> Snap FilePath
+buildPath docdir = do
+  req <- getRequest
+  let uriPath = rqURI req
+      noRootPath = BC8.dropWhile (== '/') uriPath
+  return $ getFilePath docdir (BU8.toString noRootPath)
 
 buildContent :: FilePath -> Snap ()
 buildContent filepath = do
