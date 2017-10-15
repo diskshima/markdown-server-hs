@@ -25,13 +25,11 @@ main = do
 
 site :: FilePath -> Snap ()
 site docdir =
-  ifTop (handleTop "/") <|>
+  ifTop (handleTop docdir) <|>
   route [("/:path", pathHandler docdir)]
 
-handleTop :: ByteString -> Snap ()
-handleTop path = do
-  joinedPaths <- liftIO $ joinPaths path
-  writeBS $ B8.pack joinedPaths
+handleTop :: FilePath -> Snap ()
+handleTop = buildContent
 
 joinPaths :: ByteString -> IO String
 joinPaths path = joinWithComma <$> listDirectory (B8.unpack path)
@@ -44,18 +42,15 @@ pathHandler docdir = do
   param <- getParam "path"
   case param of
     Nothing -> writeBS "N/A"
-    Just x -> do
-      content <- buildContent filepath
-      writeBS content
-      where
-        filepath = getFilePath docdir (B8.unpack x)
+    Just x -> buildContent $ getFilePath docdir (B8.unpack x)
 
-buildContent :: FilePath -> Snap ByteString
+buildContent :: FilePath -> Snap ()
 buildContent filepath = do
   isDir <- liftIO . doesDirectoryExist $ filepath
-  liftIO $ if isDir
-             then buildDirContent filepath
-             else buildFileContent filepath
+  content <- liftIO $ if isDir
+               then buildDirContent filepath
+               else buildFileContent filepath
+  writeBS content
 
 buildFileContent :: FilePath -> IO ByteString
 buildFileContent = toHtmlBS . convertString
