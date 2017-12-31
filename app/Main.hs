@@ -23,6 +23,7 @@ import           Heist                    (HeistConfig, HeistState, MIMEType,
 import           Heist.Interpreted        (Splice, bindSplice, renderTemplate,
                                            textSplice)
 import           Lib
+import           Network.URI.Encode       (decode)
 import           Snap                     (Snap, getParam, ifTop,
                                            quickHttpServe, redirect, route,
                                            writeBS, getRequest, rqURI)
@@ -60,19 +61,10 @@ heistConfig = emptyHeistConfig
   & hcInterpretedSplices .~ defaultInterpretedSplices
   & hcNamespace .~ ""
 
-handleTop :: FilePath -> Snap ()
-handleTop = buildContent
-
-joinPaths :: ByteString -> IO String
-joinPaths path = joinWithComma <$> listDirectory (BU8.toString path)
-
-joinWithComma :: [String] -> String
-joinWithComma = L.intercalate ","
-
 pathHandler :: FilePath -> Snap ()
 pathHandler docdir = do
   filepath <- buildPath docdir
-  buildContent filepath
+  buildContent (decode filepath)
 
 buildPath :: FilePath -> Snap FilePath
 buildPath docdir = do
@@ -104,6 +96,12 @@ buildDirContent :: FilePath -> IO ByteString
 buildDirContent filepath = do
   content <- joinPaths $ convertString filepath
   return $ convertString content
+
+joinPaths :: ByteString -> IO String
+joinPaths path = joinWithComma <$> listDirectory (BU8.toString path)
+
+joinWithComma :: [String] -> String
+joinWithComma = L.intercalate ","
 
 getFilePath :: FilePath -> FilePath -> FilePath
 getFilePath a b = joinPath [a, b]

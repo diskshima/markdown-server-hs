@@ -38,6 +38,7 @@ executable markdown-server-hs-exe
                      , snap-server
                      , string-conversions
                      , text
+                     , uri-encode
                      , utf8-string
                      , xmlhtml
   default-language:    Haskell2010
