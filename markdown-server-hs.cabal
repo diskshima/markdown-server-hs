@@ -37,6 +37,8 @@ executable markdown-server-hs-exe
                      , snap-core
                      , snap-server
                      , string-conversions
+                     , system-fileio
+                     , system-filepath
                      , text
                      , uri-encode
                      , utf8-string
