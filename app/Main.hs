@@ -24,9 +24,9 @@ import           Heist.Interpreted        (Splice, bindSplice, renderTemplate,
                                            textSplice)
 import           Lib
 import           Network.URI.Encode       (decode)
-import           Snap                     (Snap, getParam, ifTop,
+import           Snap                     (Snap, getParam, getRequest, ifTop,
                                            quickHttpServe, redirect, route,
-                                           writeBS, getRequest, rqURI)
+                                           rqURI, writeBS)
 import           System.Directory         (doesDirectoryExist, doesFileExist,
                                            listDirectory)
 import           System.Environment       (getArgs)
@@ -89,7 +89,7 @@ buildFileContent filepath = do
 
 htmlSplice :: ByteString -> Splice IO
 htmlSplice content = case parseHTML "" content of
-  Left err -> error err
+  Left err  -> error err
   Right doc -> return $ docContent doc
 
 buildDirContent :: FilePath -> IO ByteString
