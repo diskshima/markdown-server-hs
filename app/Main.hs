@@ -9,7 +9,6 @@ import           Control.Monad.IO.Class   (liftIO)
 import           Data.Binary.Builder      (Builder)
 import           Data.ByteString          as BS
 import           Data.ByteString.Char8    as BC8
-import qualified Data.ByteString.UTF8     as BU8
 import           Data.List                as L
 import           Data.String.Conversions  (convertString)
 import           FileUtils
@@ -70,7 +69,7 @@ buildPath docdir = do
   req <- getRequest
   let uriPath = rqURI req
       noRootPath = BC8.dropWhile (== '/') uriPath
-  return $ joinPath [docdir, BU8.toString noRootPath]
+  return $ joinPath [docdir, convertString noRootPath]
 
 buildContent :: P.FilePath -> Snap ()
 buildContent filepath = do
