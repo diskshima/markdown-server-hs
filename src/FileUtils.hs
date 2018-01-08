@@ -2,8 +2,11 @@ module FileUtils
   (
     addSlashToDir,
     isFilePathDirectory,
+    sortDirsFirst,
   ) where
 
+import           Data.List                 (isSuffixOf, sortBy)
+import qualified Data.Ord                  as Ordering
 import           Data.String.Conversions   (convertString)
 import           Filesystem                (isDirectory)
 import           Filesystem.Path.CurrentOS (FilePath, decodeString)
@@ -20,3 +23,15 @@ addSlashToDir baseDir dirOrFile = do
 
 isFilePathDirectory :: P.FilePath -> IO Bool
 isFilePathDirectory = isDirectory . decodeString
+
+endsWithSlash :: P.FilePath -> Bool
+endsWithSlash = isSuffixOf "/"
+
+sortDirsFirst :: [P.FilePath] -> [P.FilePath]
+sortDirsFirst = sortBy (\fp1 fp2 ->
+  if endsWithSlash fp1
+   then Ordering.LT
+   else
+     if endsWithSlash fp2
+       then Ordering.GT
+       else Ordering.EQ)

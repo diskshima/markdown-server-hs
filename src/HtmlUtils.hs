@@ -1,14 +1,12 @@
 module HtmlUtils
   (
     wrapWithAnchor,
-    joinAsList,
     buildDirListHtml,
     toHtmlBS,
   ) where
 
 import           CMark                   as C
 import           Data.ByteString         as BS
-import           Data.ByteString.UTF8    as BU8
 import           Data.List               as L
 import           Data.String.Conversions (convertString)
 import           Data.Text               as T
@@ -20,15 +18,19 @@ import           Text.Printf             (printf)
 wrapWithAnchor :: String -> String
 wrapWithAnchor str = printf "<a href=\"./%s\">%s</a>" str str
 
+wrapWithUnumberedList :: String -> String
+wrapWithUnumberedList = printf "<ul>%s</ul>"
+
 joinAsList :: [String] -> String
-joinAsList strs = "<ul><li>" ++ L.intercalate "</li><li>" (L.map wrapWithAnchor strs) ++ "</li></ul>"
+joinAsList strs = "<li>" ++ L.intercalate "</li><li>" (L.map wrapWithAnchor strs) ++ "</li>"
 
 buildDirListHtml :: ByteString -> IO ByteString
 buildDirListHtml path = do
-  let strPath = BU8.toString path
+  let strPath = convertString path
   dirs <- listDirectory strPath
   slashedDirs <- mapM (addSlashToDir strPath) dirs
-  return $ convertString . joinAsList $ slashedDirs
+  let sortedDirs = sortDirsFirst slashedDirs
+  return $ convertString . wrapWithUnumberedList . joinAsList $ sortedDirs
 
 toHtmlBS :: ByteString -> IO ByteString
 toHtmlBS path = do
