@@ -1,41 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import           Blaze.ByteString.Builder  (toByteString)
-import           CMark                     as C
-import           Control.Applicative       ((<|>))
-import           Control.Lens.Lens         ((&))
-import           Control.Lens.Operators    ((.~))
-import           Control.Monad.IO.Class    (liftIO)
-import           Data.Binary.Builder       (Builder)
-import           Data.ByteString           as BS
-import           Data.ByteString.Char8     as BC8
-import qualified Data.ByteString.UTF8      as BU8
-import           Data.List                 as L
-import           Data.String.Conversions   (convertString)
-import           Data.Text                 as T
-import           Filesystem                (isDirectory)
-import           Filesystem.Path.CurrentOS (FilePath, decodeString)
-import           Heist                     (HeistConfig, HeistState, MIMEType,
-                                            defaultInterpretedSplices,
-                                            emptyHeistConfig,
-                                            hcInterpretedSplices, hcNamespace,
-                                            hcTemplateLocations, initHeist,
-                                            loadTemplates)
-import           Heist.Interpreted         (Splice, bindSplice, renderTemplate,
-                                            textSplice)
-import           Lib
-import           Network.URI.Encode        (decode)
-import           Prelude                   as P
-import           Snap                      (Snap, getParam, getRequest, ifTop,
-                                            quickHttpServe, redirect, route,
-                                            rqURI, writeBS)
-import           System.Directory          (doesDirectoryExist, doesFileExist,
-                                            listDirectory)
-import           System.Environment        (getArgs)
-import           System.FilePath           (joinPath)
-import           Text.Printf               (printf)
-import           Text.XmlHtml              (docContent, parseHTML)
+import           Blaze.ByteString.Builder (toByteString)
+import           Control.Applicative      ((<|>))
+import           Control.Lens.Lens        ((&))
+import           Control.Lens.Operators   ((.~))
+import           Control.Monad.IO.Class   (liftIO)
+import           Data.Binary.Builder      (Builder)
+import           Data.ByteString          as BS
+import           Data.ByteString.Char8    as BC8
+import qualified Data.ByteString.UTF8     as BU8
+import           Data.List                as L
+import           Data.String.Conversions  (convertString)
+import           FileUtils
+import           Heist                    (HeistConfig, HeistState, MIMEType,
+                                           defaultInterpretedSplices,
+                                           emptyHeistConfig,
+                                           hcInterpretedSplices, hcNamespace,
+                                           hcTemplateLocations, initHeist,
+                                           loadTemplates)
+import           Heist.Interpreted        (Splice, bindSplice, renderTemplate,
+                                           textSplice)
+import           HtmlUtils
+import           Network.URI.Encode       (decode)
+import           Prelude                  as P
+import           Snap                     (Snap, getParam, getRequest, ifTop,
+                                           quickHttpServe, redirect, route,
+                                           rqURI, writeBS)
+import           System.Directory         (doesDirectoryExist, doesFileExist)
+import           System.Environment       (getArgs)
+import           System.FilePath          (joinPath)
+import           Text.XmlHtml             (docContent, parseHTML)
 
 main :: IO ()
 main = do
@@ -75,7 +70,7 @@ buildPath docdir = do
   req <- getRequest
   let uriPath = rqURI req
       noRootPath = BC8.dropWhile (== '/') uriPath
-  return $ getFilePath docdir (BU8.toString noRootPath)
+  return $ joinPath [docdir, BU8.toString noRootPath]
 
 buildContent :: P.FilePath -> Snap ()
 buildContent filepath = do
@@ -98,43 +93,6 @@ htmlSplice content = case parseHTML "" content of
 
 buildDirContent :: P.FilePath -> IO ByteString
 buildDirContent filepath = do
-  content <- joinPaths $ convertString filepath
+  content <- buildDirListHtml $ convertString filepath
   Just (output, _) <- renderSimple $ htmlSplice content
   return $ toByteString output
-
-addSlashToDir :: P.FilePath -> P.FilePath -> IO String
-addSlashToDir baseDir dirOrFile = do
-  let fullpath = getFilePath baseDir dirOrFile
-  isDir <- isDirectory $ decodeString fullpath
-  return $ if isDir
-    then dirOrFile ++ "/"
-    else dirOrFile
-
-joinPaths :: ByteString -> IO ByteString
-joinPaths path = do
-  let strPath = BU8.toString path
-  dirs <- listDirectory strPath
-  slashedDirs <- mapM (addSlashToDir strPath) dirs
-  return $ convertString . joinAsList $ slashedDirs
-
-wrapWithAnchor :: String -> String
-wrapWithAnchor str = printf "<a href=\"./%s\">%s</a>" str str
-
-joinAsList :: [String] -> String
-joinAsList strs = "<ul><li>" ++ L.intercalate "</li><li>" (L.map wrapWithAnchor strs) ++ "</li></ul>"
-
-getFilePath :: P.FilePath -> P.FilePath -> P.FilePath
-getFilePath a b = joinPath [a, b]
-
-toHtmlBS :: ByteString -> IO ByteString
-toHtmlBS path = do
-  content <- toHtml $ convertString path
-  return $ convertString content
-
-toHtml :: P.FilePath -> IO Text
-toHtml path = do
-  content <- T.pack <$> P.readFile path
-  return $ C.commonmarkToHtml cmarkOpts content
-
-cmarkOpts :: [C.CMarkOption]
-cmarkOpts = [C.optNormalize, C.optSmart, C.optSafe]
