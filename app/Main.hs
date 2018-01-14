@@ -3,14 +3,17 @@ module Main where
 
 import           Blaze.ByteString.Builder (toByteString)
 import           Control.Applicative      ((<|>))
+import           Control.Concurrent       (threadDelay)
 import           Control.Lens.Lens        ((&))
 import           Control.Lens.Operators   ((.~))
+import           Control.Monad            (forever)
 import           Control.Monad.IO.Class   (liftIO)
 import           Data.Binary.Builder      (Builder)
 import           Data.ByteString          as BS
 import           Data.ByteString.Char8    as BC8
 import           Data.List                as L
 import           Data.String.Conversions  (convertString)
+import           Data.Text                (Text)
 import           FileUtils
 import           Heist                    (HeistConfig, HeistState, MIMEType,
                                            defaultInterpretedSplices,
@@ -22,10 +25,13 @@ import           Heist.Interpreted        (Splice, bindSplice, renderTemplate,
                                            textSplice)
 import           HtmlUtils
 import           Network.URI.Encode       (decode)
+import           Network.WebSockets       (PendingConnection, acceptRequest,
+                                           receiveData, sendTextData)
+import           Network.WebSockets.Snap  (runWebSocketsSnap)
 import           Prelude                  as P
-import           Snap                     (Snap, getParam, getRequest, ifTop,
-                                           quickHttpServe, redirect, route,
-                                           rqURI, writeBS)
+import           Snap                     (Handler, Snap, getParam, getRequest,
+                                           ifTop, quickHttpServe, redirect,
+                                           route, rqURI, writeBS)
 import           System.Directory         (doesDirectoryExist, doesFileExist)
 import           System.Environment       (getArgs)
 import           System.FilePath          (joinPath)
@@ -38,7 +44,21 @@ main = do
   quickHttpServe (site docdir)
 
 site :: P.FilePath -> Snap ()
-site = pathHandler
+site fp =
+  route [("/ws", webSocketsDriver)] <|>
+  pathHandler fp
+
+webSocketsDriver :: Snap ()
+webSocketsDriver = runWebSocketsSnap wsApp
+
+wsApp :: PendingConnection -> IO ()
+wsApp pending = do
+  conn <- acceptRequest pending
+  forever $ do
+    path <- receiveData conn
+    sendTextData conn ("Connection for " `mappend` path :: Text)
+    threadDelay 3000000
+    sendTextData conn ("Delayed message for " `mappend` path :: Text)
 
 renderSimple :: Splice IO -> IO (Maybe (Builder, MIMEType))
 renderSimple mainSplice = do
