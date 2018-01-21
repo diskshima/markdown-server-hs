@@ -14,7 +14,7 @@ import           Data.ByteString.Char8    as BC8
 import           Data.List                as L
 import           Data.String.Conversions  (convertString)
 import           Data.Text                (Text)
-import           DirWatch                 (watchDirectory)
+import           DirWatch                 (watchDirectoryTree)
 import           FileUtils
 import           Heist                    (HeistConfig, HeistState, MIMEType,
                                            defaultInterpretedSplices,
@@ -60,8 +60,8 @@ wsApp docdir pending = do
     path <- receiveData conn :: IO ByteString
     filepath <- canonicalizePath . joinPath $ [docdir, convertString path]
     P.putStrLn $ "Monitor request for " ++ filepath
-    watchDirectory docdir $ \fp ->
-      when (filepath == fp) (sendTextData conn (convertString fp :: ByteString))
+    watchDirectoryTree docdir $ \fp ->
+      when (filepath == fp) (sendTextData conn ("Updated" :: ByteString))
 
 renderSimple :: Splice IO -> IO (Maybe (Builder, MIMEType))
 renderSimple mainSplice = do
