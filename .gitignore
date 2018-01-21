@@ -1,2 +1,8 @@
+javascript/dst
+
 .stack-work/
+
+node_modules/
+yarn-error.log
+
 log/
