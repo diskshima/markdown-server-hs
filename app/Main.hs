@@ -30,9 +30,10 @@ import           Network.WebSockets       (PendingConnection, acceptRequest,
                                            receiveData, sendTextData)
 import           Network.WebSockets.Snap  (runWebSocketsSnap)
 import           Prelude                  as P
-import           Snap                     (Handler, Snap, getParam, getRequest,
-                                           ifTop, quickHttpServe, redirect,
-                                           route, rqURI, writeBS)
+import           Snap                     (Handler, Snap, dir, getParam,
+                                           getRequest, ifTop, quickHttpServe,
+                                           redirect, route, rqURI, writeBS)
+import           Snap.Util.FileServe      (serveDirectory)
 import           System.Directory         (canonicalizePath, doesDirectoryExist,
                                            doesFileExist)
 import           System.Environment       (getArgs)
@@ -47,7 +48,9 @@ main = do
 
 site :: P.FilePath -> Snap ()
 site docdir =
-  route [("/ws", webSocketsDriver docdir)] <|>
+  route [ ("/ws", webSocketsDriver docdir)
+        , ("/js", serveDirectory "javascript/dst")
+        ] <|>
   pathHandler docdir
 
 webSocketsDriver :: P.FilePath -> Snap ()

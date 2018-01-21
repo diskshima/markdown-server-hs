@@ -1,5 +1,20 @@
+const readPath = () => window.location.pathname;
+const reloadPage = () => window.location.reload(true);
+const hostUrl = window.location.host;
+
 const init = () => {
-  console.log('Hello');
+  console.log(hostUrl);
+  const socket = new WebSocket(`ws://${hostUrl}/ws`);
+  const path = readPath();
+
+  socket.onopen = (ev) => {
+    socket.send(path.replace(/^\//, ''));
+  };
+
+  socket.onmessage = (ev) => {
+    console.log(`"${ev.data}" received. Reloading`);
+    reloadPage();
+  };
 };
 
 const runAttachEvent = (func) => {
