@@ -30,8 +30,11 @@ endsWithSlash = isSuffixOf "/"
 sortDirsFirst :: [P.FilePath] -> [P.FilePath]
 sortDirsFirst = sortBy (\fp1 fp2 ->
   if endsWithSlash fp1
-   then Ordering.LT
+    then
+      if endsWithSlash fp2
+        then compare fp1 fp2
+        else Ordering.LT
    else
      if endsWithSlash fp2
        then Ordering.GT
-       else Ordering.EQ)
+       else compare fp1 fp2)
