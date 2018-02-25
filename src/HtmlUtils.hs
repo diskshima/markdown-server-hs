@@ -28,9 +28,13 @@ buildDirListHtml :: ByteString -> IO ByteString
 buildDirListHtml path = do
   let strPath = convertString path
   dirs <- listDirectory strPath
-  slashedDirs <- mapM (addSlashToDir strPath) dirs
+  let dotsRemoved = removeDotEntries dirs
+  slashedDirs <- mapM (addSlashToDir strPath) dotsRemoved
   let sortedDirs = sortDirsFirst slashedDirs
   return $ convertString . wrapWithUnumberedList . joinAsList $ sortedDirs
+
+removeDotEntries :: [String] -> [String]
+removeDotEntries = P.filter (not . L.isPrefixOf ".")
 
 toHtmlBS :: ByteString -> IO ByteString
 toHtmlBS path = do
